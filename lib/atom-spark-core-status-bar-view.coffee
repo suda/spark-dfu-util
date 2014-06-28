@@ -36,3 +36,10 @@ class AtomSparkCoreStatusBarView extends View
       if type
           el.removeClass()
             .addClass('text-' + type)
+
+  clear: ->
+    el = this.find('.build-status span')
+    self = @
+    el.fadeOut ->
+      self.setStatus ''
+      el.show()

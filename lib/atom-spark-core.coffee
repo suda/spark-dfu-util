@@ -20,6 +20,7 @@ module.exports =
   flashRunning: false
   packagePath: null
   platform: null
+  dfuDialogInterval: null
 
   activate: (state) ->
     if @isArduinoProject()
@@ -29,7 +30,8 @@ module.exports =
 
       atom.workspaceView.command 'atom-spark-core:build', '.editor', => @build()
       atom.workspaceView.command 'atom-spark-core:toggle', '.editor', => @toggle()
-      atom.workspaceView.command 'atom-spark-core:flash', '.editor', => @flash()
+      atom.workspaceView.command 'atom-spark-core:flash', '.editor', => @prepareForFlash()
+      atom.workspaceView.command 'atom-spark-core:cancel-flash', => @cancelFlash()
 
       # Add gcc to path
       # TODO: Test platform
@@ -68,6 +70,15 @@ module.exports =
   #
   stripPaths: (paths) ->
     (path.basename(item) for item in paths)
+
+  #
+  # Clear status after interval
+  #
+  clearStatusBar: ->
+    setTimeout (=>
+      # @atomSparkCoreStatusBarView.setStatus ''
+      @atomSparkCoreStatusBarView.clear()
+    ), 5000
 
   #
   # Show/hide the build log
@@ -145,19 +156,34 @@ module.exports =
 
             self.buildRunning = false
 
-            setTimeout (=>
-              self.atomSparkCoreStatusBarView.setStatus ''
-            ), 5000
+            self.clearStatusBar()
 
+  flash: ->
+    @atomSparkCoreStatusBarView.setStatus 'Flashing...'
   #
   # Flash core using dfutil
   #
-  flash: ->
+  prepareForFlash: ->
+    # @build
+    @atomSparkCoreStatusBarView.setStatus 'Waiting for core...'
     self = @
     dfuUtil = cp.exec 'dfu-util -l', (error, stdout, stderr) ->
       if stdout.indexOf('[1d50:607f]') > -1
         # Device found! Flash it
-        console.log 'Found!'
+        self.flash()
       else
         # No device found
         self.atomSparkCoreDfuDialog.show()
+        # Wait until device shows up
+        self.dfuDialogInterval = setInterval ->
+          dfuUtil = cp.exec 'dfu-util -l', (error, stdout, stderr) ->
+            if stdout.indexOf('[1d50:607f]') > -1
+              clearInterval self.dfuDialogInterval
+              self.atomSparkCoreDfuDialog.hide()
+              self.flash()
+        , 500
+
+  cancelFlash: ->
+    clearInterval @dfuDialogInterval
+    @atomSparkCoreStatusBarView.setStatus 'Flashing canceled'
+    @clearStatusBar()
