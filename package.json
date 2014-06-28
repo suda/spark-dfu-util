@@ -1,0 +1,17 @@
+{
+  "name": "atom-spark-core",
+  "main": "./lib/atom-spark-core",
+  "version": "0.0.1",
+  "description": "A short description of your package",
+  "repository": "https://github.com/atom/atom-spark-core",
+  "license": "MIT",
+  "engines": {
+    "atom": ">0.50.0"
+  },
+  "dependencies": {
+    "fs-plus": "^2.0.4",
+    "temp": "^0.8.0",
+    "handlebars": "^2.0.0-alpha.4",
+    "loophole": "^1.0.0"
+  }
+}
