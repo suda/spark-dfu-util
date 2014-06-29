@@ -17,7 +17,7 @@ This package contains all necessary tools (like cross compiler and dfu-util) for
 
 **This package only works with projects containing an .ino file.**
 
-* Use command palate and search for `Atom Spark Core: Build` or `Atom Spark Core: Flash`
+* Use command palette and search for `Atom Spark Core: Build` or `Atom Spark Core: Flash`
 
 or
 
