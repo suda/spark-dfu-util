@@ -12,3 +12,5 @@
 ## 0.2.2 - Bug fixes
 
 ## 0.2.3 - Fixed flashing on OS X
+
+## 0.2.4 - Fixed issue with toggling log view
