@@ -12,19 +12,3 @@ describe "AtomSparkCore", ->
   beforeEach ->
     atom.workspaceView = new WorkspaceView
     activationPromise = atom.packages.activatePackage('atom-spark-core')
-
-  describe "when the atom-spark-core:toggle event is triggered", ->
-    it "attaches and then detaches the view", ->
-      expect(atom.workspaceView.find('.atom-spark-core')).not.toExist()
-
-      # This is an activation event, triggering it will cause the package to be
-      # activated.
-      atom.workspaceView.trigger 'atom-spark-core:toggle'
-
-      waitsForPromise ->
-        activationPromise
-
-      runs ->
-        expect(atom.workspaceView.find('.atom-spark-core')).toExist()
-        atom.workspaceView.trigger 'atom-spark-core:toggle'
-        expect(atom.workspaceView.find('.atom-spark-core')).not.toExist()
