@@ -8,3 +8,5 @@
 ## 0.2.0 - Accidental bump
 
 ## 0.2.1 - Bug fixes
+
+## 0.2.2 - Bug fixes
