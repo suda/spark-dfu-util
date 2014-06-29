@@ -1,7 +1,7 @@
 {
   "name": "atom-spark-core",
   "main": "./lib/atom-spark-core",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Support for Spark Core development in Atom",
   "repository": "https://github.com/suda/atom-spark-core",
   "license": "MIT",
