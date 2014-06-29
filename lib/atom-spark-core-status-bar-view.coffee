@@ -32,10 +32,10 @@ class AtomSparkCoreStatusBarView extends View
   setStatus: (text, type = null) ->
       el = this.find('.build-status span')
       el.text(' ' + text)
+        .removeClass()
 
       if type
-          el.removeClass()
-            .addClass('text-' + type)
+          el.addClass('text-' + type)
 
   clear: ->
     el = this.find('.build-status span')
