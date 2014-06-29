@@ -44,3 +44,4 @@ For .ino syntax highlighting and snippets, use [language-arduino](https://atom.i
 * Spark Cloud variables and commands panel
 * Support for libraries
 * Built-in firmware reference
+* Built-in examples
