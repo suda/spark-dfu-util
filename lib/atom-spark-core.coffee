@@ -21,6 +21,7 @@ module.exports =
   packagePath: null
   platform: null
   dfuDialogInterval: null
+  tempDirPath: null
 
   activate: (state) ->
     if @isArduinoProject()
@@ -32,6 +33,13 @@ module.exports =
       atom.workspaceView.command 'atom-spark-core:toggle', '.editor', => @toggle()
       atom.workspaceView.command 'atom-spark-core:flash', '.editor', => @prepareForFlash()
       atom.workspaceView.command 'atom-spark-core:cancel-flash', => @cancelFlash()
+
+      # Create temp directory
+      temp.track()
+      self = @
+      temp.mkdir 'atom-spark-core', (error, tempDirPath) ->
+        console.log tempDirPath + ' created'
+        self.tempDirPath = tempDirPath
 
       # Add gcc to path
       # TODO: Test platform
@@ -45,6 +53,7 @@ module.exports =
   deactivate: ->
     @atomSparkCoreStatusBarView = new AtomSparkCoreStatusBarView() unless @atomSparkCoreStatusBarView
     @atomSparkCoreStatusBarView.destroy()
+    temp.cleanupSync();
 
   serialize: ->
     atomSparkCoreLogViewState: @atomSparkCoreLogView.serialize()
@@ -94,69 +103,62 @@ module.exports =
       return
 
     if @testForArduinoProject()
-
       @atomSparkCoreStatusBarView.setStatus 'Building...'
+
+      # Collect .c/.cpp/.ino/.S files
+      projectPath = atom.project.getRootDirectory().getPath()
+      data = {
+        core_firmware_path: @packagePath + '/src/core-firmware',
+        arduino_path: @packagePath + '/src/arduino',
+        project_path: projectPath,
+        c_files: @stripPaths(fs.listSync(projectPath, ['c'])),
+        ino_files: @stripPaths(fs.listSync(projectPath, ['ino'])),
+        cpp_files: @stripPaths(fs.listSync(projectPath, ['cpp'])),
+        asm_files: @stripPaths(fs.listSync(projectPath, ['S']))
+      }
+
+      # Create makefile
+      makefileSource = fs.readFileSync @packagePath + '/templates/makefile'
+
       self = @
+      # Allow using new Function(...)
+      allowUnsafeNewFunction ->
+        makefileTemplate = handlebars.compile makefileSource.toString()
+        makefile = makefileTemplate data
+        fs.writeFileSync self.tempDirPath + '/makefile', makefile
 
-      # Create temp directory
-      temp.track()
-      temp.mkdir 'atom-spark-core', (error, tempDirPath) ->
-        console.log tempDirPath + ' created'
+        # Run build
+        self.atomSparkCoreLogView.show()
+        self.atomSparkCoreLogView.clear()
+        self.buildRunning = true
 
-        # Collect .c/.cpp/.ino/.S files
-        projectPath = atom.project.getRootDirectory().getPath()
-        data = {
-          core_firmware_path: self.packagePath + '/src/core-firmware',
-          arduino_path: self.packagePath + '/src/arduino',
-          project_path: projectPath,
-          c_files: self.stripPaths(fs.listSync(projectPath, ['c'])),
-          ino_files: self.stripPaths(fs.listSync(projectPath, ['ino'])),
-          cpp_files: self.stripPaths(fs.listSync(projectPath, ['cpp'])),
-          asm_files: self.stripPaths(fs.listSync(projectPath, ['S']))
+        args = []
+        make = cp.spawn 'make', args, {
+          cwd: self.tempDirPath,
+          env: process.env
         }
 
-        # Create makefile
-        makefileSource = fs.readFileSync self.packagePath + '/templates/makefile'
+        # Use readline to generate line input from raw data
+        stdout = readline.createInterface { input: make.stdout, terminal: false }
+        stderr = readline.createInterface { input: make.stderr, terminal: false }
 
-        # Allow using new Function(...)
-        allowUnsafeNewFunction ->
-          makefileTemplate = handlebars.compile makefileSource.toString()
-          makefile = makefileTemplate data
-          fs.writeFileSync tempDirPath + '/makefile', makefile
+        stdout.on 'line',  (line) =>
+          self.atomSparkCoreLogView.print line
 
-          # Run build
+        stderr.on 'line',  (line) =>
+          self.atomSparkCoreLogView.print line, true
 
-          self.atomSparkCoreLogView.show()
-          self.atomSparkCoreLogView.clear()
-          self.buildRunning = true
+        make.on 'close',  (code) =>
+          self.atomSparkCoreLogView.removeLastEmptyLogLine()
 
-          args = []
-          make = cp.spawn 'make', args, {
-            cwd: tempDirPath,
-            env: process.env
-          }
+          if code is 0
+            self.atomSparkCoreStatusBarView.setStatus 'Build succeeded'
+          else
+            self.atomSparkCoreStatusBarView.setStatus 'Build failed', 'error'
 
-          # Use readline to generate line input from raw data
-          stdout = readline.createInterface { input: make.stdout, terminal: false }
-          stderr = readline.createInterface { input: make.stderr, terminal: false }
+          self.buildRunning = false
 
-          stdout.on 'line',  (line) =>
-            self.atomSparkCoreLogView.print line
-
-          stderr.on 'line',  (line) =>
-            self.atomSparkCoreLogView.print line, true
-
-          make.on 'close',  (code) =>
-            self.atomSparkCoreLogView.removeLastEmptyLogLine()
-
-            if code is 0
-              self.atomSparkCoreStatusBarView.setStatus 'Build succeeded'
-            else
-              self.atomSparkCoreStatusBarView.setStatus 'Build failed', 'error'
-
-            self.buildRunning = false
-
-            self.clearStatusBar()
+          self.clearStatusBar()
 
   flash: ->
     @atomSparkCoreStatusBarView.setStatus 'Flashing...'
