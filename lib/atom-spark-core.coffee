@@ -159,13 +159,16 @@ module.exports =
 
           self.buildRunning = false
 
-          self.clearStatusBar()
-
           if (code is 0) && self.buildAndFlash
             self.buildAndFlash = false
             self.flash()
+          else
+            self.clearStatusBar()
 
   flash: ->
+    if @flashRunning
+      return
+
     @atomSparkCoreStatusBarView.setStatus 'Flashing...'
     @atomSparkCoreLogView.print '[34mInvoking dfu-util...[0m'
     @atomSparkCoreLogView.print 'dfu-util -d 1d50:607f -a 0 -s 0x08005000:leave -D core-firmware.bin'
@@ -180,9 +183,11 @@ module.exports =
       cwd: @tempDirPath,
       env: process.env
     }
+    @flashRunning = true
 
     self = @
-    progress = 0
+    progress = 1
+    totalSize = 0
     # Use readline to generate line input from raw data
     stdout = readline.createInterface { input: dfuUtil.stdout, terminal: false }
     stderr = readline.createInterface { input: dfuUtil.stderr, terminal: false }
@@ -191,16 +196,29 @@ module.exports =
       if (data.length == 1) && (data[0] == 46)
         # This is a dot symbolising 1kb of upload. Update progress bar
         progress++
+        self.atomSparkCoreStatusBarView.setProgress Math.round((progress / totalSize) * 100)
+        self.atomSparkCoreStatusBarView.setStatus 'Uploading:'
+        if progress == totalSize
+          self.atomSparkCoreStatusBarView.hideProgress()
 
     stdout.on 'line',  (line) =>
       self.atomSparkCoreLogView.print line, false, true
-
+      if line.indexOf('Downloading to address') != -1
+        # Line with upload size
+        result = line.match /size = (\d+)/
+        totalSize = Math.ceil(parseInt(result[1]) / 1024)
 
     stderr.on 'line',  (line) =>
       self.atomSparkCoreLogView.print line, true
 
     dfuUtil.on 'close',  (code) =>
-      console.log code
+      if code == 0
+        @atomSparkCoreStatusBarView.setStatus 'Flash succeeded'
+      else
+        @atomSparkCoreStatusBarView.setStatus 'Flash failed', 'error'
+
+      self.flashRunning = false
+      self.clearStatusBar()
 
   #
   # Flash core using dfu-util
