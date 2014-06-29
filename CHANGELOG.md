@@ -10,3 +10,5 @@
 ## 0.2.1 - Bug fixes
 
 ## 0.2.2 - Bug fixes
+
+## 0.2.3 - Fixed flashing on OS X
