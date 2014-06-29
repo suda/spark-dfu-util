@@ -16,12 +16,13 @@ module.exports =
   atomSparkCoreStatusBarView: null
   atomSparkCoreLogView: null
   atomSparkCoreDfuDialog: null
-  buildRunning: false
-  flashRunning: false
   packagePath: null
   platform: null
   dfuDialogInterval: null
   tempDirPath: null
+  buildRunning: false
+  flashRunning: false
+  buildAndFlash: false
 
   activate: (state) ->
     if @isArduinoProject()
@@ -160,30 +161,71 @@ module.exports =
 
           self.clearStatusBar()
 
+          if (code is 0) && self.buildAndFlash
+            self.buildAndFlash = false
+            self.flash()
+
   flash: ->
     @atomSparkCoreStatusBarView.setStatus 'Flashing...'
+    @atomSparkCoreLogView.print '[34mInvoking dfu-util...[0m'
+    @atomSparkCoreLogView.print 'dfu-util -d 1d50:607f -a 0 -s 0x08005000:leave -D core-firmware.bin'
+
+    args = [
+      '-d', '1d50:607f',
+      '-a', '0',
+      '-s', '0x08005000:leave',
+      '-D', 'core-firmware.bin'
+    ]
+    dfuUtil = cp.spawn 'dfu-util', args, {
+      cwd: @tempDirPath,
+      env: process.env
+    }
+
+    self = @
+    progress = 0
+    # Use readline to generate line input from raw data
+    stdout = readline.createInterface { input: dfuUtil.stdout, terminal: false }
+    stderr = readline.createInterface { input: dfuUtil.stderr, terminal: false }
+
+    dfuUtil.stdout.on 'data',  (data) =>
+      if (data.length == 1) && (data[0] == 46)
+        # This is a dot symbolising 1kb of upload. Update progress bar
+        progress++
+
+    stdout.on 'line',  (line) =>
+      self.atomSparkCoreLogView.print line, false, true
+
+
+    stderr.on 'line',  (line) =>
+      self.atomSparkCoreLogView.print line, true
+
+    dfuUtil.on 'close',  (code) =>
+      console.log code
+
   #
-  # Flash core using dfutil
+  # Flash core using dfu-util
   #
   prepareForFlash: ->
-    # @build
-    @atomSparkCoreStatusBarView.setStatus 'Waiting for core...'
-    self = @
-    dfuUtil = cp.exec 'dfu-util -l', (error, stdout, stderr) ->
-      if stdout.indexOf('[1d50:607f]') > -1
-        # Device found! Flash it
-        self.flash()
-      else
-        # No device found
-        self.atomSparkCoreDfuDialog.show()
-        # Wait until device shows up
-        self.dfuDialogInterval = setInterval ->
-          dfuUtil = cp.exec 'dfu-util -l', (error, stdout, stderr) ->
-            if stdout.indexOf('[1d50:607f]') > -1
-              clearInterval self.dfuDialogInterval
-              self.atomSparkCoreDfuDialog.hide()
-              self.flash()
-        , 500
+    if @testForArduinoProject()
+      @atomSparkCoreStatusBarView.setStatus 'Waiting for core...'
+      self = @
+      dfuUtil = cp.exec 'dfu-util -l', (error, stdout, stderr) ->
+        if stdout.indexOf('[1d50:607f]') > -1
+          # Device found! Build project and flash it
+          self.buildAndFlash = true
+          self.build()
+        else
+          # No device found
+          self.atomSparkCoreDfuDialog.show()
+          # Wait until device shows up
+          self.dfuDialogInterval = setInterval ->
+            dfuUtil = cp.exec 'dfu-util -l', (error, stdout, stderr) ->
+              if stdout.indexOf('[1d50:607f]') > -1
+                clearInterval self.dfuDialogInterval
+                self.atomSparkCoreDfuDialog.hide()
+                self.buildAndFlash = true
+                self.build()
+          , 500
 
   cancelFlash: ->
     clearInterval @dfuDialogInterval

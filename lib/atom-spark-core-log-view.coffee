@@ -42,7 +42,7 @@ class AtomSparkCoreLogView extends View
     if lastPre.text() == ''
       lastPre.remove()
 
-  print: (line, stderr = false) ->
+  print: (line, stderr = false, append = false) ->
     # If we are scrolled all the way down we follow the output
     panel = @canvas.parent()
     at_bottom = (panel.scrollTop() + panel.innerHeight() + 10 > panel[0].scrollHeight)
@@ -50,20 +50,18 @@ class AtomSparkCoreLogView extends View
     if stderr
       @printError line
     else
-      @printOutput line
+      @printOutput line, append
 
     if at_bottom
       panel.scrollTop(panel[0].scrollHeight)
 
-  printOutput: (line) ->
+  printOutput: (line, append = false) ->
     # Header
     if line.indexOf('[34m') != -1
       line = @removeTerminalColors line
 
       # Remove last newline from previous <pre>
       @removeLastEmptyLogLine()
-
-      # TODO: flash: zap
 
       icon = 'file-code'
       if line.indexOf('Linker') != -1
@@ -72,6 +70,8 @@ class AtomSparkCoreLogView extends View
         icon = 'package'
       else if line.indexOf('Print Size') != -1
         icon = 'dashboard'
+      else if line.indexOf('dfu-util') != -1
+        icon = 'zap'
 
       lastHeader = icon
 
@@ -84,7 +84,10 @@ class AtomSparkCoreLogView extends View
     else
       line = @removeTerminalColors line
 
-      @canvas.find('li.list-item:last-child').append $("<pre class=\"output\">#{line}</pre>")
+      if append
+        @canvas.find('li.list-item:last-child pre.output:last').append line + "\n"
+      else
+        @canvas.find('li.list-item:last-child').append $("<pre class=\"output\">#{line}</pre>")
 
   printError: (line) ->
     # Search for file:line:col: references
