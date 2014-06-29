@@ -1,6 +1,6 @@
 .DS_Store
 npm-debug.log
 node_modules
-src/core-common-lib/build
-src/core-communication-lib/build
-src/core-firmware/build
+src/core-common-lib/build/obj
+src/core-communication-lib/build/obj
+src/core-firmware/build/core-firmware.*
