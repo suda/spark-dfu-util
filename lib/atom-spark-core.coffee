@@ -46,8 +46,8 @@ module.exports =
       # TODO: Test platform
       @platform = 'darwin'
       @packagePath = path.resolve(__dirname, '..')
-      process.env.PATH += ':' + @packagePath + '/bin/' + @platform + '/gcc-arm-none-eabi/bin/' +
-                          ':' + @packagePath + '/bin/' + @platform
+      process.env.PATH += ':' + @packagePath + '/platforms/' + @platform + '/gcc-arm-none-eabi/bin' +
+                          ':' + @packagePath + '/platforms/' + @platform + '/bin'
 
       # @atomSparkCoreLogView.foo()
 
