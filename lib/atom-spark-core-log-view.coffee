@@ -14,7 +14,6 @@ class AtomSparkCoreLogView extends View
         @ul outlet: 'canvas', class: 'list-tree'
 
   initialize: (serializeState) ->
-    atom.workspaceView.command 'atom-spark-core:toggle', => @toggle()
     @textBuffer = $("<pre class=\"stderr\">")
 
   # Returns an object that can be retrieved when package is activated
