@@ -1,16 +1,17 @@
-path = require 'path'
-fs = require 'fs-plus'
-cp = require 'child_process'
-readline = require 'readline'
-temp = require 'temp'
-handlebars = require 'handlebars'
-
-$ = require('atom').$
 {allowUnsafeEval, allowUnsafeNewFunction} = require 'loophole'
 
-AtomSparkCoreStatusBarView = require './atom-spark-core-status-bar-view'
-AtomSparkCoreLogView = require './atom-spark-core-log-view'
-AtomSparkCoreDfuDialog = require './atom-spark-core-dfu-dialog'
+fs = null
+path = null
+cp = null
+readline = null
+temp = null
+handlebars = null
+
+$ = null
+
+AtomSparkCoreStatusBarView = null
+AtomSparkCoreLogView = null
+AtomSparkCoreDfuDialog = null
 
 module.exports =
   atomSparkCoreStatusBarView: null
@@ -25,11 +26,27 @@ module.exports =
   buildAndFlash: false
 
   activate: (state) ->
+
     if @isArduinoProject()
+      # Speeds up package loading
+      path ?= require 'path'
+      cp ?= require 'child_process'
+      readline ?= require 'readline'
+      temp ?= require 'temp'
+      handlebars ?= require 'handlebars'
+
+      $ ?= require('atom').$
+
+      AtomSparkCoreStatusBarView ?= require './atom-spark-core-status-bar-view'
+      AtomSparkCoreLogView ?= require './atom-spark-core-log-view'
+      AtomSparkCoreDfuDialog ?= require './atom-spark-core-dfu-dialog'
+
+      # Views initialization
       @atomSparkCoreStatusBarView = new AtomSparkCoreStatusBarView()
       @atomSparkCoreLogView = new AtomSparkCoreLogView(state.atomSparkCoreLogViewState)
       @atomSparkCoreDfuDialog = new AtomSparkCoreDfuDialog()
 
+      # Hooking up commands
       atom.workspaceView.command 'atom-spark-core:build', '.editor', => @build()
       atom.workspaceView.command 'atom-spark-core:toggle', '.editor', => @toggle()
       atom.workspaceView.command 'atom-spark-core:flash', '.editor', => @prepareForFlash()
@@ -52,9 +69,12 @@ module.exports =
       # @atomSparkCoreLogView.foo()
 
   deactivate: ->
-    @atomSparkCoreStatusBarView = new AtomSparkCoreStatusBarView() unless @atomSparkCoreStatusBarView
-    @atomSparkCoreStatusBarView.destroy()
-    temp.cleanupSync();
+    @atomSparkCoreStatusBarView?.destroy()
+    @atomSparkCoreLogView?.destroy()
+    @atomSparkCoreDfuDialog?.destroy()
+
+    temp.cleanupSync()
+
 
   serialize: ->
     atomSparkCoreLogViewState: @atomSparkCoreLogView.serialize()
@@ -63,8 +83,13 @@ module.exports =
   # Check if project contains a .ino file
   #
   isArduinoProject: ->
-    inoFiles = fs.listSync(atom.project.getRootDirectory().getPath(), ['ino'])
-    inoFiles.length > 0
+    fs ?= require 'fs-plus'
+
+    if atom.project.getRootDirectory() != null
+      inoFiles = fs.listSync(atom.project.getRootDirectory().getPath(), ['ino'])
+      inoFiles.length > 0
+    else
+      false
 
   #
   # Check for .ino file and alert if not found
