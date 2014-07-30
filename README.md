@@ -31,9 +31,9 @@ For .ino syntax highlighting and snippets, use [language-arduino](https://atom.i
 * make **3.82**
 * dfu-util **0.7**
 * gcc-arm-none-eabi **4.8-2014-q2-update**
-* core-firmware @ [71ab7857321aa28d3e62f14e2f754604272bf473](https://github.com/spark/core-firmware/tree/71ab7857321aa28d3e62f14e2f754604272bf473)
+* core-firmware @ [106aae0b1cc242c52271f34e4ded9bd332b1ac6d](https://github.com/spark/core-firmware/tree/106aae0b1cc242c52271f34e4ded9bd332b1ac6d)
 * core-communication-lib @ [aef1c7f352e91187999e86b0abd88156be0715c3](https://github.com/spark/core-communication-lib/tree/aef1c7f352e91187999e86b0abd88156be0715c3)
-* core-common-lib @ [6da8ef7c4c672d4ad1637ba8b13eafbbc1c7138b](https://github.com/spark/core-common-lib/tree/6da8ef7c4c672d4ad1637ba8b13eafbbc1c7138b)
+* core-common-lib @ [9e611a4e58ad82921a9f6e966f887b8d4cb25b17](https://github.com/spark/core-common-lib/tree/9e611a4e58ad82921a9f6e966f887b8d4cb25b17)
 
 # Todo
 
