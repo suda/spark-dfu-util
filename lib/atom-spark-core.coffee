@@ -77,7 +77,7 @@ module.exports =
 
 
   serialize: ->
-    atomSparkCoreLogViewState: @atomSparkCoreLogView.serialize()
+    atomSparkCoreLogViewState: @atomSparkCoreLogView?.serialize()
 
   #
   # Check if project contains a .ino file
