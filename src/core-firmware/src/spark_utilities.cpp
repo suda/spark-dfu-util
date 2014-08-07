@@ -26,7 +26,6 @@
  */
 #include "spark_utilities.h"
 #include "spark_wiring.h"
-#include "spark_wiring_network.h"
 #include "socket.h"
 #include "netapp.h"
 #include "string.h"
@@ -343,7 +342,7 @@ void SparkClass::sleep(Spark_Sleep_TypeDef sleepMode, long seconds)
 	switch(sleepMode)
 	{
 	case SLEEP_MODE_WLAN:
-		Network.disconnect();
+		WiFi.off();
 		break;
 
 	case SLEEP_MODE_DEEP:
@@ -784,7 +783,8 @@ int Spark_Connect(void)
     case INVALID_INTERNET_ADDRESS:
     {
       const char default_domain[] = "device.spark.io";
-      memcpy(server_addr.domain, default_domain, strlen(default_domain));
+      // Make sure we copy the NULL terminator, so subsequent strlen() calls on server_addr.domain return the correct length
+      memcpy(server_addr.domain, default_domain, strlen(default_domain) + 1);
       // and fall through to domain name case
     }
 
