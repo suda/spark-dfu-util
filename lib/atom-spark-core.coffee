@@ -47,9 +47,9 @@ module.exports =
       @atomSparkCoreDfuDialog = new AtomSparkCoreDfuDialog()
 
       # Hooking up commands
-      atom.workspaceView.command 'atom-spark-core:build', '.editor', => @build()
-      atom.workspaceView.command 'atom-spark-core:toggle', '.editor', => @toggle()
-      atom.workspaceView.command 'atom-spark-core:flash', '.editor', => @prepareForFlash()
+      atom.workspaceView.command 'atom-spark-core:build', => @build()
+      atom.workspaceView.command 'atom-spark-core:toggle', => @toggle()
+      atom.workspaceView.command 'atom-spark-core:flash', => @prepareForFlash()
       atom.workspaceView.command 'atom-spark-core:cancel-flash', => @cancelFlash()
 
       # Create temp directory
