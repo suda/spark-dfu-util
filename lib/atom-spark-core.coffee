@@ -47,10 +47,18 @@ module.exports =
       @atomSparkCoreDfuDialog = new AtomSparkCoreDfuDialog()
 
       # Hooking up commands
-      atom.workspaceView.command 'atom-spark-core:build', => @build()
-      atom.workspaceView.command 'atom-spark-core:toggle', => @toggle()
-      atom.workspaceView.command 'atom-spark-core:flash', => @prepareForFlash()
-      atom.workspaceView.command 'atom-spark-core:cancel-flash', => @cancelFlash()
+      atom.workspaceView.command 'atom-spark-core:build', =>
+        console.debug 'atom-spark-core:build triggered'
+        @build()
+      atom.workspaceView.command 'atom-spark-core:toggle', =>
+        console.debug 'atom-spark-core:toggle triggered'
+        @toggle()
+      atom.workspaceView.command 'atom-spark-core:flash', =>
+        console.debug 'atom-spark-core:flash triggered'
+        @prepareForFlash()
+      atom.workspaceView.command 'atom-spark-core:cancel-flash', =>
+        console.debug 'atom-spark-core:cancel-flash triggered'
+        @cancelFlash()
 
       # Create temp directory
       temp.track()
@@ -84,12 +92,17 @@ module.exports =
   #
   isArduinoProject: ->
     fs ?= require 'fs-plus'
-
     if atom.project.getRootDirectory() != null
       inoFiles = fs.listSync(atom.project.getRootDirectory().getPath(), ['ino'])
-      inoFiles.length > 0
+      if inoFiles.length > 0
+        console.debug 'This is Arduino project'
+        return true
+      else
+        console.debug 'This isn\'t Arduino project'
+        return false
     else
-      false
+      console.debug 'This isn\'t Arduino project'
+      return false
 
   #
   # Check for .ino file and alert if not found
@@ -126,6 +139,7 @@ module.exports =
   #
   build: ->
     if @buildRunning
+      console.debug 'Build was running. Canceling...'
       return
 
     if @testForArduinoProject()
@@ -192,6 +206,7 @@ module.exports =
 
   flash: ->
     if @flashRunning
+      console.debug 'Flash was running. Canceling...'
       return
 
     @atomSparkCoreStatusBarView.setStatus 'Flashing...'
