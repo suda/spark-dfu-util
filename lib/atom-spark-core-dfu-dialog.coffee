@@ -1,5 +1,7 @@
 {View} = require 'atom'
 
+Subscriber = null
+
 module.exports =
 class AtomSparkCoreDfuDialog extends View
   @content: ->
@@ -12,6 +14,11 @@ class AtomSparkCoreDfuDialog extends View
         @button click: 'cancel', class: 'btn', 'Cancel'
 
   initialize: (serializeState) ->
+    {Subscriber} = require 'emissary'
+    @subscriber = new Subscriber()
+    @subscriber.subscribeToCommand atom.workspaceView, 'core:cancel core:close', ({target}) =>
+      atom.workspaceView.trigger 'atom-spark-core:cancel-flash'
+      @hide()
 
   # Returns an object that can be retrieved when package is activated
   serialize: ->
@@ -28,5 +35,4 @@ class AtomSparkCoreDfuDialog extends View
       @detach()
 
   cancel: (event, element) ->
-    atom.workspaceView.trigger 'atom-spark-core:cancel-flash'
-    @hide()
+    atom.workspaceView.trigger 'core:cancel'
