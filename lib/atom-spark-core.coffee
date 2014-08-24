@@ -73,7 +73,7 @@ module.exports =
     @atomSparkCoreLogView?.destroy()
     @atomSparkCoreDfuDialog?.destroy()
 
-    temp.cleanupSync()
+    temp?.cleanupSync()
 
 
   serialize: ->
