@@ -26,55 +26,53 @@ module.exports =
   buildAndFlash: false
 
   activate: (state) ->
+    # Speeds up package loading
+    path ?= require 'path'
+    cp ?= require 'child_process'
+    readline ?= require 'readline'
+    temp ?= require 'temp'
+    handlebars ?= require 'handlebars'
+    fs ?= require 'fs-plus'
 
-    if @isArduinoProject()
-      # Speeds up package loading
-      path ?= require 'path'
-      cp ?= require 'child_process'
-      readline ?= require 'readline'
-      temp ?= require 'temp'
-      handlebars ?= require 'handlebars'
+    $ ?= require('atom').$
 
-      $ ?= require('atom').$
+    AtomSparkCoreStatusBarView ?= require './atom-spark-core-status-bar-view'
+    AtomSparkCoreLogView ?= require './atom-spark-core-log-view'
+    AtomSparkCoreDfuDialog ?= require './atom-spark-core-dfu-dialog'
 
-      AtomSparkCoreStatusBarView ?= require './atom-spark-core-status-bar-view'
-      AtomSparkCoreLogView ?= require './atom-spark-core-log-view'
-      AtomSparkCoreDfuDialog ?= require './atom-spark-core-dfu-dialog'
+    # Views initialization
+    @atomSparkCoreStatusBarView = new AtomSparkCoreStatusBarView()
+    @atomSparkCoreLogView = new AtomSparkCoreLogView(state.atomSparkCoreLogViewState)
+    @atomSparkCoreDfuDialog = new AtomSparkCoreDfuDialog()
 
-      # Views initialization
-      @atomSparkCoreStatusBarView = new AtomSparkCoreStatusBarView()
-      @atomSparkCoreLogView = new AtomSparkCoreLogView(state.atomSparkCoreLogViewState)
-      @atomSparkCoreDfuDialog = new AtomSparkCoreDfuDialog()
+    # Hooking up commands
+    atom.workspaceView.command 'atom-spark-core:build', =>
+      console.debug 'atom-spark-core:build triggered'
+      @build()
+    atom.workspaceView.command 'atom-spark-core:toggle', =>
+      console.debug 'atom-spark-core:toggle triggered'
+      @toggle()
+    atom.workspaceView.command 'atom-spark-core:flash', =>
+      console.debug 'atom-spark-core:flash triggered'
+      @prepareForFlash()
+    atom.workspaceView.command 'atom-spark-core:cancel-flash', =>
+      console.debug 'atom-spark-core:cancel-flash triggered'
+      @cancelFlash()
 
-      # Hooking up commands
-      atom.workspaceView.command 'atom-spark-core:build', =>
-        console.debug 'atom-spark-core:build triggered'
-        @build()
-      atom.workspaceView.command 'atom-spark-core:toggle', =>
-        console.debug 'atom-spark-core:toggle triggered'
-        @toggle()
-      atom.workspaceView.command 'atom-spark-core:flash', =>
-        console.debug 'atom-spark-core:flash triggered'
-        @prepareForFlash()
-      atom.workspaceView.command 'atom-spark-core:cancel-flash', =>
-        console.debug 'atom-spark-core:cancel-flash triggered'
-        @cancelFlash()
+    # Create temp directory
+    temp.track()
+    self = @
+    temp.mkdir 'atom-spark-core', (error, tempDirPath) ->
+      console.log tempDirPath + ' created'
+      self.tempDirPath = tempDirPath
 
-      # Create temp directory
-      temp.track()
-      self = @
-      temp.mkdir 'atom-spark-core', (error, tempDirPath) ->
-        console.log tempDirPath + ' created'
-        self.tempDirPath = tempDirPath
+    # Add gcc to path
+    # TODO: Test platform
+    @platform = 'darwin'
+    @packagePath = path.resolve(__dirname, '..')
+    process.env.PATH += ':' + @packagePath + '/platforms/' + @platform + '/gcc-arm-none-eabi/bin' +
+                        ':' + @packagePath + '/platforms/' + @platform + '/bin'
 
-      # Add gcc to path
-      # TODO: Test platform
-      @platform = 'darwin'
-      @packagePath = path.resolve(__dirname, '..')
-      process.env.PATH += ':' + @packagePath + '/platforms/' + @platform + '/gcc-arm-none-eabi/bin' +
-                          ':' + @packagePath + '/platforms/' + @platform + '/bin'
-
-      # @atomSparkCoreLogView.foo()
 
   deactivate: ->
     @atomSparkCoreStatusBarView?.destroy()
@@ -142,67 +140,66 @@ module.exports =
       console.debug 'Build was running. Canceling...'
       return
 
-    if @testForArduinoProject()
-      @atomSparkCoreStatusBarView.setStatus 'Building...'
+    @atomSparkCoreStatusBarView.setStatus 'Building...'
 
-      # Collect .c/.cpp/.ino/.S files
-      projectPath = atom.project.getRootDirectory().getPath()
-      data = {
-        core_firmware_path: @packagePath + '/src/core-firmware',
-        arduino_path: @packagePath + '/src/arduino',
-        project_path: projectPath,
-        c_files: @stripPaths(fs.listSync(projectPath, ['c'])),
-        ino_files: @stripPaths(fs.listSync(projectPath, ['ino'])),
-        cpp_files: @stripPaths(fs.listSync(projectPath, ['cpp'])),
-        asm_files: @stripPaths(fs.listSync(projectPath, ['S']))
+    # Collect .c/.cpp/.ino/.S files
+    projectPath = atom.project.getRootDirectory().getPath()
+    data = {
+      core_firmware_path: @packagePath + '/src/core-firmware',
+      arduino_path: @packagePath + '/src/arduino',
+      project_path: projectPath,
+      c_files: @stripPaths(fs.listSync(projectPath, ['c'])),
+      ino_files: @stripPaths(fs.listSync(projectPath, ['ino'])),
+      cpp_files: @stripPaths(fs.listSync(projectPath, ['cpp'])),
+      asm_files: @stripPaths(fs.listSync(projectPath, ['S']))
+    }
+
+    # Create makefile
+    makefileSource = fs.readFileSync @packagePath + '/templates/makefile'
+
+    self = @
+    # Allow using new Function(...)
+    allowUnsafeNewFunction ->
+      makefileTemplate = handlebars.compile makefileSource.toString()
+      makefile = makefileTemplate data
+      fs.writeFileSync self.tempDirPath + '/makefile', makefile
+
+      # Run build
+      self.atomSparkCoreLogView.show()
+      self.atomSparkCoreLogView.clear()
+      self.buildRunning = true
+
+      args = []
+      make = cp.spawn 'make', args, {
+        cwd: self.tempDirPath,
+        env: process.env
       }
 
-      # Create makefile
-      makefileSource = fs.readFileSync @packagePath + '/templates/makefile'
+      # Use readline to generate line input from raw data
+      stdout = readline.createInterface { input: make.stdout, terminal: false }
+      stderr = readline.createInterface { input: make.stderr, terminal: false }
 
-      self = @
-      # Allow using new Function(...)
-      allowUnsafeNewFunction ->
-        makefileTemplate = handlebars.compile makefileSource.toString()
-        makefile = makefileTemplate data
-        fs.writeFileSync self.tempDirPath + '/makefile', makefile
+      stdout.on 'line',  (line) =>
+        self.atomSparkCoreLogView.print line
 
-        # Run build
-        self.atomSparkCoreLogView.show()
-        self.atomSparkCoreLogView.clear()
-        self.buildRunning = true
+      stderr.on 'line',  (line) =>
+        self.atomSparkCoreLogView.print line, true
 
-        args = []
-        make = cp.spawn 'make', args, {
-          cwd: self.tempDirPath,
-          env: process.env
-        }
+      make.on 'close',  (code) =>
+        self.atomSparkCoreLogView.removeLastEmptyLogLine()
 
-        # Use readline to generate line input from raw data
-        stdout = readline.createInterface { input: make.stdout, terminal: false }
-        stderr = readline.createInterface { input: make.stderr, terminal: false }
+        if code is 0
+          self.atomSparkCoreStatusBarView.setStatus 'Build succeeded'
+        else
+          self.atomSparkCoreStatusBarView.setStatus 'Build failed', 'error'
 
-        stdout.on 'line',  (line) =>
-          self.atomSparkCoreLogView.print line
+        self.buildRunning = false
 
-        stderr.on 'line',  (line) =>
-          self.atomSparkCoreLogView.print line, true
-
-        make.on 'close',  (code) =>
-          self.atomSparkCoreLogView.removeLastEmptyLogLine()
-
-          if code is 0
-            self.atomSparkCoreStatusBarView.setStatus 'Build succeeded'
-          else
-            self.atomSparkCoreStatusBarView.setStatus 'Build failed', 'error'
-
-          self.buildRunning = false
-
-          if (code is 0) && self.buildAndFlash
-            self.buildAndFlash = false
-            self.flash()
-          else
-            self.clearStatusBar()
+        if (code is 0) && self.buildAndFlash
+          self.buildAndFlash = false
+          self.flash()
+        else
+          self.clearStatusBar()
 
   flash: ->
     if @flashRunning
@@ -264,26 +261,25 @@ module.exports =
   # Flash core using dfu-util
   #
   prepareForFlash: ->
-    if @testForArduinoProject()
-      @atomSparkCoreStatusBarView.setStatus 'Waiting for core...'
-      self = @
-      dfuUtil = cp.exec 'dfu-util -l', (error, stdout, stderr) ->
-        if stdout.indexOf('[1d50:607f]') > -1
-          # Device found! Build project and flash it
-          self.buildAndFlash = true
-          self.build()
-        else
-          # No device found
-          self.atomSparkCoreDfuDialog.show()
-          # Wait until device shows up
-          self.dfuDialogInterval = setInterval ->
-            dfuUtil = cp.exec 'dfu-util -l', (error, stdout, stderr) ->
-              if stdout.indexOf('[1d50:607f]') > -1
-                clearInterval self.dfuDialogInterval
-                self.atomSparkCoreDfuDialog.hide()
-                self.buildAndFlash = true
-                self.build()
-          , 500
+    @atomSparkCoreStatusBarView.setStatus 'Waiting for core...'
+    self = @
+    dfuUtil = cp.exec 'dfu-util -l', (error, stdout, stderr) ->
+      if stdout.indexOf('[1d50:607f]') > -1
+        # Device found! Build project and flash it
+        self.buildAndFlash = true
+        self.build()
+      else
+        # No device found
+        self.atomSparkCoreDfuDialog.show()
+        # Wait until device shows up
+        self.dfuDialogInterval = setInterval ->
+          dfuUtil = cp.exec 'dfu-util -l', (error, stdout, stderr) ->
+            if stdout.indexOf('[1d50:607f]') > -1
+              clearInterval self.dfuDialogInterval
+              self.atomSparkCoreDfuDialog.hide()
+              self.buildAndFlash = true
+              self.build()
+        , 500
 
   cancelFlash: ->
     clearInterval @dfuDialogInterval
