@@ -26,7 +26,7 @@ class AtomSparkCoreDfuDialog extends View
   destroy: ->
     @detach()
 
-  show: ->
+  show: =>
     if !@hasParent()
       atom.workspaceView.append(this)
 

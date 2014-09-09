@@ -4,3 +4,5 @@ node_modules
 src/core-common-lib/build/obj
 src/core-communication-lib/build/obj
 src/core-firmware/build/core-firmware.*
+src/core-firmware/tests/*
+src/core-firmware/ci/*

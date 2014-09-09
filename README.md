@@ -31,9 +31,9 @@ For .ino syntax highlighting and snippets, use [language-arduino](https://atom.i
 * make **3.82**
 * dfu-util **0.7**
 * gcc-arm-none-eabi **4.8-2014-q2-update**
-* core-firmware @ [6cf8c10e0d1939e9aaed30a42cad7732d43dc81e](https://github.com/spark/core-firmware/tree/6cf8c10e0d1939e9aaed30a42cad7732d43dc81e)
-* core-communication-lib @ [6dd05041452b180aeed1c6a7322069133c9d3f0f](https://github.com/spark/core-communication-lib/tree/6dd05041452b180aeed1c6a7322069133c9d3f0f)
-* core-common-lib @ [3283e75870ae3a7a5256c8944313644f821dc89b](https://github.com/spark/core-common-lib/tree/3283e75870ae3a7a5256c8944313644f821dc89b)
+* core-firmware @ [64ce57bdfcf9d672acbd2dbf2e2c97956f39fd5f](https://github.com/spark/core-firmware/tree/64ce57bdfcf9d672acbd2dbf2e2c97956f39fd5f)
+* core-communication-lib @ [9bd5b56e90a0d54abba1a63e7c195f9bf2252698](https://github.com/spark/core-communication-lib/tree/9bd5b56e90a0d54abba1a63e7c195f9bf2252698)
+* core-common-lib @ [c7d8bf978393c22b36c9dd956e35597a32274e73](https://github.com/spark/core-common-lib/tree/c7d8bf978393c22b36c9dd956e35597a32274e73)
 
 # Todo
 
