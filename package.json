@@ -1,16 +1,15 @@
 {
-  "name": "atom-spark-core",
-  "main": "./lib/atom-spark-core",
+  "name": "spark-dfu-util",
+  "main": "./lib/spark-dfu-util",
   "version": "0.2.13",
-  "description": "Support for Spark Core development in Atom",
-  "repository": "https://github.com/suda/atom-spark-core",
+  "description": "Support for flashing Spark Core with dfu-util",
+  "repository": "https://github.com/suda/spark-dfu-util",
   "license": "MIT",
   "engines": {
     "atom": ">0.50.0"
   },
   "dependencies": {
     "fs-plus": "^2.0.4",
-    "temp": "^0.8.0",
     "handlebars": "^2.0.0-alpha.4",
     "loophole": "^1.0.0",
     "emissary": "1.x"

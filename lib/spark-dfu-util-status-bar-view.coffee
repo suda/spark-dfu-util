@@ -2,11 +2,10 @@
 $ = require('atom').$
 
 module.exports =
-class AtomSparkCoreStatusBarView extends View
+class SparkDfuUtilStatusBarView extends View
   @content: ->
-    @div class: 'inline-block atom-spark-core-status-bar-view', =>
+    @div class: 'inline-block spark-dfu-util-status-bar-view', =>
       @a title: 'Spark Core', class: 'build-status', =>
-        @img src: 'atom://atom-spark-core/images/spark.png', class: 'spark'
         @span ' '
       @progress class: 'inline-block', max: '100', value: '0', outlet: 'progress'
 
@@ -29,7 +28,7 @@ class AtomSparkCoreStatusBarView extends View
     @remove()
 
   toggleLog: ->
-      atom.workspaceView.trigger 'atom-spark-core:toggle'
+      atom.workspaceView.trigger 'spark-dfu-util:toggle'
 
   setStatus: (text, type = null) ->
       el = this.find('.build-status span')

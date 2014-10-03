@@ -4,13 +4,13 @@
 $ = require('atom').$
 
 module.exports =
-class AtomSparkCoreLogView extends View
+class SparkDfuUtilLogView extends View
   lastHeader = null
   textBuffer = null
   lastMessageType = null
 
   @content: ->
-      @div tabIndex: -1, class: 'atom-spark-core-log-view tool-panel panel-bottom', =>
+      @div tabIndex: -1, class: 'spark-dfu-util-log-view tool-panel panel-bottom', =>
         @ul outlet: 'canvas', class: 'list-tree'
 
   initialize: (serializeState) ->

@@ -1,0 +1,14 @@
+# See https://atom.io/docs/latest/creating-a-package#menus for more details
+
+'menu': [
+  {
+    'label': 'Packages'
+    'submenu': [
+      'label': 'Spark DFU util'
+      'submenu': [
+        { 'label': 'Flash', 'command': 'spark-dfu-util:flash' },
+        { 'label': 'Toggle log view', 'command': 'spark-dfu-util:toggle' },
+      ]
+    ]
+  }
+]

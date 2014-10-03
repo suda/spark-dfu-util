@@ -8,6 +8,5 @@
 # For more detailed documentation see
 # https://atom.io/docs/latest/advanced/keymaps
 '.workspace':
-  'f5': 'atom-spark-core:build'
-  'shift-f5': 'atom-spark-core:toggle'
-  'f6': 'atom-spark-core:flash'
+  'shift-f6': 'spark-dfu-util:toggle'
+  'f6': 'spark-dfu-util:flash'
