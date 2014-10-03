@@ -1,10 +1,7 @@
-{allowUnsafeEval, allowUnsafeNewFunction} = require 'loophole'
-
 fs = null
 path = null
 cp = null
 readline = null
-handlebars = null
 
 $ = null
 
@@ -29,7 +26,6 @@ module.exports =
     path ?= require 'path'
     cp ?= require 'child_process'
     readline ?= require 'readline'
-    handlebars ?= require 'handlebars'
     fs ?= require 'fs-plus'
     $ ?= require('atom').$
 
