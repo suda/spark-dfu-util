@@ -61,6 +61,9 @@ module.exports =
   serialize: ->
     sparkDfuUtilLogViewState: @sparkDfuUtilLogView?.serialize()
 
+  configDefaults:
+    # Delete .bin file after flash
+    deleteFirmwareAfterFlash: true
 
   #
   # Remove paths from files array
@@ -87,19 +90,29 @@ module.exports =
       console.debug 'Flash was running. Canceling...'
       return
 
+    rootPath = atom.project.getPath()
+    files = fs.listSync(rootPath)
+    files = files.filter (file) ->
+      return file.split('.').pop().toLowerCase() == 'bin'
+    files.reverse()
+
+    if files.length == 0
+      @sparkDfuUtilStatusBarView.setStatus 'No firmware found', 'error'
+      return
+
+    file = files.pop()
+
     @sparkDfuUtilStatusBarView.setStatus 'Flashing...'
     @sparkDfuUtilLogView.print '[34mInvoking dfu-util...[0m'
-    @sparkDfuUtilLogView.print 'dfu-util -d 1d50:607f -a 0 -s 0x08005000:leave -D core-firmware.bin'
+    @sparkDfuUtilLogView.print 'dfu-util -d 1d50:607f -a 0 -s 0x08005000:leave -D ' + file
 
     args = [
       '-d', '1d50:607f',
       '-a', '0',
       '-s', '0x08005000:leave',
-      '-D', 'core-firmware.bin'
+      '-D', file
     ]
-    # TODO: Find firmware file
     dfuUtil = cp.spawn 'dfu-util', args, {
-      cwd: @tempDirPath,
       env: process.env
     }
     @flashRunning = true
@@ -133,6 +146,9 @@ module.exports =
     dfuUtil.on 'close',  (code) =>
       if code == 0
         @sparkDfuUtilStatusBarView.setStatus 'Flash succeeded'
+
+        if atom.config.get 'spark-dfu-util.deleteFirmwareAfterFlash'
+          fs.unlink file
       else
         @sparkDfuUtilStatusBarView.setStatus 'Flash failed', 'error'
 
@@ -147,9 +163,8 @@ module.exports =
     self = @
     dfuUtil = cp.exec 'dfu-util -l', (error, stdout, stderr) ->
       if stdout.indexOf('[1d50:607f]') > -1
-        # Device found! Build project and flash it
-        self.buildAndFlash = true
-        self.build()
+        # Device found! Flash it!
+        self.flash()
       else
         # No device found
         self.sparkDfuUtilDfuDialog.show()
@@ -159,8 +174,7 @@ module.exports =
             if stdout.indexOf('[1d50:607f]') > -1
               clearInterval self.dfuDialogInterval
               self.sparkDfuUtilDfuDialog.hide()
-              self.buildAndFlash = true
-              self.build()
+              self.flash()
         , 500
 
   cancelFlash: ->
